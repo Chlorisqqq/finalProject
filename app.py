@@ -412,65 +412,36 @@ def main():
 
     processed_df = st.session_state.get("processed_df")
 
-    # Upload Emails 页面：先预览，再按钮，再结果
-    if selected_section == "Upload Emails":
-        st.subheader("Uploaded Email Data Preview")
-        st.dataframe(raw_df.head(), use_container_width=True)
+    show_upload_page(raw_df, processed_df)
 
-        if processed_df is not None:
-            st.success("AI analysis already completed for this uploaded file.")
+    if st.button("Run AI Analysis", type="primary"):
+        try:
+            classifier = load_classification_model(CLASSIFICATION_MODEL_PATH)
 
-        if st.button("Run AI Analysis", type="primary"):
-            try:
-                classifier = load_classification_model(CLASSIFICATION_MODEL_PATH)
+            with st.spinner("Classifying emails and generating summaries..."):
+                processed_df = analyze_emails(
+                    raw_df,
+                    classifier=classifier,
+                    summarizer=summarizer,
+                )
 
-                with st.spinner("Classifying emails and generating summaries..."):
-                    processed_df = analyze_emails(
-                        raw_df,
-                        classifier=classifier,
-                        summarizer=summarizer,
-                    )
+            st.session_state["processed_df"] = processed_df
+            st.success("Email analysis completed.")
+            st.rerun()
 
-                st.session_state["processed_df"] = processed_df
-                st.success("Email analysis completed.")
-                st.rerun()
-
-            except Exception as error:
-                st.error(f"AI analysis failed: {error}")
-                return
-
-        if processed_df is not None:
-            st.subheader("Processed Email Results")
-
-            preview_columns = [
-                "email_id",
-                "predicted_issue",
-                "confidence",
-                "summary",
-                "subject",
-            ]
-
-            st.dataframe(
-                processed_df[preview_columns],
-                use_container_width=True,
-            )
-        else:
-            st.warning("Please click 'Run AI Analysis' to process the uploaded emails.")
-
-    elif selected_section == "Dashboard":
-        if processed_df is None:
-            st.warning("Please click 'Run AI Analysis' to process the uploaded emails.")
+        except Exception as error:
+            st.error(f"AI analysis failed: {error}")
             return
+
+    processed_df = st.session_state.get("processed_df")
+
+    if processed_df is None:
+        st.warning("Please click 'Run AI Analysis' to process the uploaded emails.")
+        return
+
+    if selected_section == "Dashboard":
         show_dashboard_page(processed_df)
-
     elif selected_section == "Review Tickets":
-        if processed_df is None:
-            st.warning("Please click 'Run AI Analysis' to process the uploaded emails.")
-            return
         show_review_tickets_page(processed_df)
-
     elif selected_section == "Export Results":
-        if processed_df is None:
-            st.warning("Please click 'Run AI Analysis' to process the uploaded emails.")
-            return
         show_export_results_page(processed_df)
