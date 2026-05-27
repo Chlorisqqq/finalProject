@@ -34,11 +34,11 @@ CLASSIFICATION_MODEL_PATH = get_configured_model_path()
 REQUIRED_COLUMNS = ["subject", "email_body"]
 OUTPUT_COLUMNS = [
     "email_id",
-    "subject",
-    "email_body",
     "predicted_issue",
     "confidence",
     "summary",
+    "subject",
+    "email_body",
 ]
 
 
@@ -277,8 +277,19 @@ def show_upload_page(raw_df, processed_df):
 
     if processed_df is not None:
         st.subheader("Processed Email Results")
-        st.dataframe(processed_df, use_container_width=True)
 
+        preview_columns = [
+            "email_id",
+            "predicted_issue",
+            "confidence",
+            "summary",
+            "subject",
+        ]
+
+        st.dataframe(
+            processed_df[preview_columns],
+            use_container_width=True,
+        )
 
 def show_dashboard_page(processed_df):
     """
@@ -401,26 +412,46 @@ def main():
 
     processed_df = st.session_state.get("processed_df")
 
-    show_upload_page(raw_df, processed_df)
+st.subheader("Uploaded Email Data Preview")
+st.dataframe(raw_df.head(), use_container_width=True)
 
-    if st.button("Run AI Analysis", type="primary"):
-        try:
-            classifier = load_classification_model(CLASSIFICATION_MODEL_PATH)
+if processed_df is not None:
+    st.success("AI analysis already completed for this uploaded file.")
 
-            with st.spinner("Classifying emails and generating summaries..."):
-                processed_df = analyze_emails(
-                    raw_df,
-                    classifier=classifier,
-                    summarizer=summarizer,
-                )
+if st.button("Run AI Analysis", type="primary"):
+    try:
+        classifier = load_classification_model(CLASSIFICATION_MODEL_PATH)
 
-            st.session_state["processed_df"] = processed_df
-            st.success("Email analysis completed.")
-            st.rerun()
+        with st.spinner("Classifying emails and generating summaries..."):
+            processed_df = analyze_emails(
+                raw_df,
+                classifier=classifier,
+                summarizer=summarizer,
+            )
 
-        except Exception as error:
-            st.error(f"AI analysis failed: {error}")
-            return
+        st.session_state["processed_df"] = processed_df
+        st.success("Email analysis completed.")
+        st.rerun()
+
+    except Exception as error:
+        st.error(f"AI analysis failed: {error}")
+        return
+
+if processed_df is not None:
+    st.subheader("Processed Email Results")
+
+    preview_columns = [
+        "email_id",
+        "predicted_issue",
+        "confidence",
+        "summary",
+        "subject",
+    ]
+
+    st.dataframe(
+        processed_df[preview_columns],
+        use_container_width=True,
+    )
 
     if processed_df is None:
         st.warning("Please click 'Run AI Analysis' to process the uploaded emails.")
