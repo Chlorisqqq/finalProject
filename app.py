@@ -429,27 +429,27 @@ def main():
 
     processed_df = st.session_state.get("processed_df")
 
-  show_upload_page(raw_df, processed_df)
+    show_upload_page(raw_df, processed_df)
 
-if processed_df is None:
-    if st.button("Run AI Analysis", type="primary"):
-        try:
-            classifier = load_classification_model(CLASSIFICATION_MODEL_PATH)
+    if processed_df is None:
+        if st.button("Run AI Analysis", type="primary"):
+            try:
+                classifier = load_classification_model(CLASSIFICATION_MODEL_PATH)
 
-            with st.spinner("Classifying emails and generating summaries..."):
-                processed_df = analyze_emails(
-                    raw_df,
-                    classifier=classifier,
-                    summarizer=summarizer,
-                )
+                with st.spinner("Classifying emails and generating summaries..."):
+                    processed_df = analyze_emails(
+                        raw_df,
+                        classifier=classifier,
+                        summarizer=summarizer,
+                    )
 
-            st.session_state["processed_df"] = processed_df
-            st.success("Email analysis completed.")
-            st.rerun()
+                st.session_state["processed_df"] = processed_df
+                st.success("Email analysis completed.")
+                st.rerun()
 
-        except Exception as error:
-            st.error(f"AI analysis failed: {error}")
-            return
+            except Exception as error:
+                st.error(f"AI analysis failed: {error}")
+                return
     else:
         st.success("AI analysis already completed for this uploaded file.")
 
