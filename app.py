@@ -291,22 +291,6 @@ def show_upload_page(raw_df, processed_df):
             use_container_width=True,
         )
 
-        st.subheader("Detailed Results")
-        for _, row in processed_df.iterrows():
-            with st.expander(
-                f"Email {row['email_id']} | {row['predicted_issue']} | {row['confidence']:.2%}"
-            ):
-                st.markdown(f"### Predicted Issue: {row['predicted_issue']}")
-                st.markdown(f"**Confidence:** {row['confidence']:.2%}")
-                st.markdown("### AI Summary")
-                st.write(row["summary"])
-
-                st.markdown("**Subject:**")
-                st.write(row["subject"])
-
-                st.markdown("**Original Email:**")
-                st.write(row["email_body"])
-
 
 def show_dashboard_page(processed_df):
     """
