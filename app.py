@@ -4,6 +4,7 @@ from io import BytesIO
 import pandas as pd
 import streamlit as st
 
+from transformers import pipeline
 
 # =========================
 # Config
@@ -77,11 +78,13 @@ def load_classification_model(model_path):
 @st.cache_resource
 def load_summarization_model():
     """
-    Placeholder for future summarization model.
-    Currently this function returns None.
-    Later, replace this with a real summarization pipeline.
+    Load summarization pipeline using T5.
     """
-    summarizer = None
+    summarizer = pipeline(
+        "summarization",
+        model="t5-small",
+        tokenizer="t5-small",
+    )
     return summarizer
 
 
@@ -148,16 +151,21 @@ def classify_email(email_text, classifier):
 
 def summarize_email(email_text, summarizer=None):
     """
-    Placeholder summarization function.
-
-    Currently there is no summarization model.
-    This function returns a temporary placeholder summary.
-
-    Later, replace this part with:
-    summary_result = summarizer(email_text, ...)
-    summary = summary_result[0]["summary_text"]
+    Generate a summary using the summarization pipeline.
     """
-    summary = "Summary model not implemented yet."
+    if summarizer is None:
+        return "Summarization model is not loaded."
+
+    prompt = "summarize: " + email_text
+
+    result = summarizer(
+        prompt,
+        max_length=60,
+        min_length=15,
+        truncation=True,
+    )
+
+    summary = result[0]["summary_text"]
     return summary
 
 
