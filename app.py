@@ -77,16 +77,14 @@ def load_classification_model(model_path):
 @st.cache_resource
 def load_summarization_model():
     """
-    Load summarization pipeline.
+    Load T5 model and tokenizer for summarization.
     """
-    from transformers import pipeline
+    from transformers import T5Tokenizer, T5ForConditionalGeneration
 
-    summarizer = pipeline(
-        "summarization",
-        model="t5-small",
-        tokenizer="t5-small",
-    )
-    return summarizer
+    tokenizer = T5Tokenizer.from_pretrained("t5-small")
+    model = T5ForConditionalGeneration.from_pretrained("t5-small")
+
+    return tokenizer, model
 
 
 # =========================
@@ -152,23 +150,36 @@ def classify_email(email_text, classifier):
 
 def summarize_email(email_text, summarizer=None):
     """
-    Generate a summary using T5 summarization pipeline.
+    Generate a summary using T5 model.
     """
     if summarizer is None:
         return "Summarization model is not loaded."
 
-    prompt = "summarize: " + email_text
+    tokenizer, model = summarizer
 
-    result = summarizer(
-        prompt,
-        max_length=60,
-        min_length=15,
-        truncation=True,
-    )
+    try:
+        prompt = "summarize: " + email_text
 
-    summary = result[0]["summary_text"]
-    return summary
+        inputs = tokenizer.encode(
+            prompt,
+            return_tensors="pt",
+            max_length=512,
+            truncation=True
+        )
 
+        summary_ids = model.generate(
+            inputs,
+            max_length=60,
+            min_length=15,
+            num_beams=4,
+            early_stopping=True
+        )
+
+        summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
+        return summary
+
+    except Exception as error:
+        return f"Summary generation failed: {error}"
 
 def analyze_emails(df, classifier, summarizer=None):
     """
