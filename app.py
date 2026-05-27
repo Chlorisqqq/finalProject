@@ -3,7 +3,7 @@ from io import BytesIO
 
 import pandas as pd
 import streamlit as st
-from transformers import pipeline
+
 
 # =========================
 # Config
@@ -34,11 +34,11 @@ CLASSIFICATION_MODEL_PATH = get_configured_model_path()
 REQUIRED_COLUMNS = ["subject", "email_body"]
 OUTPUT_COLUMNS = [
     "email_id",
+    "subject",
+    "email_body",
     "predicted_issue",
     "confidence",
     "summary",
-    "subject",
-    "email_body",
 ]
 
 
@@ -77,14 +77,17 @@ def load_classification_model(model_path):
 @st.cache_resource
 def load_summarization_model():
     """
-    Load T5 model and tokenizer for summarization.
+    Load summarization pipeline.
     """
-    from transformers import T5Tokenizer, T5ForConditionalGeneration
+    from transformers import pipeline
 
-    tokenizer = T5Tokenizer.from_pretrained("t5-small")
-    model = T5ForConditionalGeneration.from_pretrained("t5-small")
+    summarizer = pipeline(
+        "summarization",
+        model="t5-small",
+        tokenizer="t5-small",
+    )
+    return summarizer
 
-    return tokenizer, model
 
 # =========================
 # Data Processing Functions
@@ -149,36 +152,22 @@ def classify_email(email_text, classifier):
 
 def summarize_email(email_text, summarizer=None):
     """
-    Generate a summary using T5 model.
+    Generate a summary using T5 summarization pipeline.
     """
     if summarizer is None:
         return "Summarization model is not loaded."
 
-    tokenizer, model = summarizer
+    prompt = "summarize: " + email_text
 
-    try:
-        prompt = "summarize: " + email_text
+    result = summarizer(
+        prompt,
+        max_length=60,
+        min_length=15,
+        truncation=True,
+    )
 
-        inputs = tokenizer.encode(
-            prompt,
-            return_tensors="pt",
-            max_length=512,
-            truncation=True
-        )
-
-        summary_ids = model.generate(
-            inputs,
-            max_length=60,
-            min_length=15,
-            num_beams=4,
-            early_stopping=True
-        )
-
-        summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
-        return summary
-
-    except Exception as error:
-        return f"Summary generation failed: {error}"
+    summary = result[0]["summary_text"]
+    return summary
 
 
 def analyze_emails(df, classifier, summarizer=None):
@@ -277,19 +266,8 @@ def show_upload_page(raw_df, processed_df):
 
     if processed_df is not None:
         st.subheader("Processed Email Results")
+        st.dataframe(processed_df, use_container_width=True)
 
-        preview_columns = [
-            "email_id",
-            "predicted_issue",
-            "confidence",
-            "summary",
-            "subject",
-        ]
-
-        st.dataframe(
-            processed_df[preview_columns],
-            use_container_width=True,
-        )
 
 def show_dashboard_page(processed_df):
     """
@@ -433,8 +411,6 @@ def main():
             st.error(f"AI analysis failed: {error}")
             return
 
-    processed_df = st.session_state.get("processed_df")
-
     if processed_df is None:
         st.warning("Please click 'Run AI Analysis' to process the uploaded emails.")
         return
@@ -445,3 +421,7 @@ def main():
         show_review_tickets_page(processed_df)
     elif selected_section == "Export Results":
         show_export_results_page(processed_df)
+
+
+if __name__ == "__main__":
+    main()
