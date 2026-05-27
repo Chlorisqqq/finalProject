@@ -34,11 +34,11 @@ CLASSIFICATION_MODEL_PATH = get_configured_model_path()
 REQUIRED_COLUMNS = ["subject", "email_body"]
 OUTPUT_COLUMNS = [
     "email_id",
-    "subject",
-    "email_body",
     "predicted_issue",
     "confidence",
     "summary",
+    "subject",
+    "email_body",
 ]
 
 
@@ -277,7 +277,35 @@ def show_upload_page(raw_df, processed_df):
 
     if processed_df is not None:
         st.subheader("Processed Email Results")
-        st.dataframe(processed_df, use_container_width=True)
+
+        preview_columns = [
+            "email_id",
+            "predicted_issue",
+            "confidence",
+            "summary",
+            "subject",
+        ]
+
+        st.dataframe(
+            processed_df[preview_columns],
+            use_container_width=True,
+        )
+
+        st.subheader("Detailed Results")
+        for _, row in processed_df.iterrows():
+            with st.expander(
+                f"Email {row['email_id']} | {row['predicted_issue']} | {row['confidence']:.2%}"
+            ):
+                st.markdown(f"### Predicted Issue: {row['predicted_issue']}")
+                st.markdown(f"**Confidence:** {row['confidence']:.2%}")
+                st.markdown("### AI Summary")
+                st.write(row["summary"])
+
+                st.markdown("**Subject:**")
+                st.write(row["subject"])
+
+                st.markdown("**Original Email:**")
+                st.write(row["email_body"])
 
 
 def show_dashboard_page(processed_df):
@@ -401,8 +429,9 @@ def main():
 
     processed_df = st.session_state.get("processed_df")
 
-    show_upload_page(raw_df, processed_df)
+  show_upload_page(raw_df, processed_df)
 
+if processed_df is None:
     if st.button("Run AI Analysis", type="primary"):
         try:
             classifier = load_classification_model(CLASSIFICATION_MODEL_PATH)
@@ -421,6 +450,8 @@ def main():
         except Exception as error:
             st.error(f"AI analysis failed: {error}")
             return
+    else:
+        st.success("AI analysis already completed for this uploaded file.")
 
     if processed_df is None:
         st.warning("Please click 'Run AI Analysis' to process the uploaded emails.")
