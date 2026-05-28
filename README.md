@@ -28,10 +28,10 @@ $env:CLASSIFICATION_MODEL_PATH="ysubr/CustomModel_queue_bert"
 streamlit run app.py
 ```
 
-The summarization function is intentionally a placeholder and currently returns:
+The app uses the following Hugging Face summarization model by default:
 
 ```text
-Summary model not implemented yet.
+t5-small
 ```
 
 ## Run
